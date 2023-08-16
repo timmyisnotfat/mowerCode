@@ -37,7 +37,7 @@ const int BLADE_PIN =23;
 
 int stateForBlade = 0;
 
-#define TRIGGER_PIN 18 // D18 For reset WiFi credential
+// #define TRIGGER_PIN 18 // D18 For reset WiFi credential
 #define TX_PIN 32
 #define RX_PIN 33
 
@@ -174,27 +174,27 @@ void setup() {
   // espSerial.begin(9600);
   Serial.println("\n Starting");
   Serial1.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
-  pinMode(TRIGGER_PIN, INPUT_PULLUP);
+  // pinMode(TRIGGER_PIN, INPUT_PULLUP);
   WiFiManager wm;
  
 
 
 bool res;
  
-if (digitalRead(TRIGGER_PIN) == HIGH){
-  res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
+// if (digitalRead(TRIGGER_PIN) == HIGH){
+//   res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
  
  
  
  
-    if(!res) {
+//     if(!res) {
  
-        Serial.println("Failed to connect");
+//         Serial.println("Failed to connect");
  
-        // ESP.restart();
+//         // ESP.restart();
  
-    }
-} 
+//     }
+// } 
 
   
   // pinMode(TRIGGER_PIN, INPUT_PULLUP);
@@ -263,25 +263,25 @@ void loop() {
 
 
   delay(100);
-if ( digitalRead(TRIGGER_PIN) == LOW) {
-  bool res;
-    WiFiManager wm;    
+// if ( digitalRead(TRIGGER_PIN) == LOW) {
+//   bool res;
+//     WiFiManager wm;    
  
-    //reset settings - for testing
-    //wm.resetSettings();
+//     //reset settings - for testing
+//     //wm.resetSettings();
   
-    // set configportal timeout
-    wm.resetSettings();
-    Serial.print("Cleaned");
-    res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
-    if(!res) {
+//     // set configportal timeout
+//     wm.resetSettings();
+//     Serial.print("Cleaned");
+//     res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
+//     if(!res) {
  
-        Serial.println("Failed to connect");
+//         Serial.println("Failed to connect");
  
-        // ESP.restart();
+//         // ESP.restart();
  
-    }
-  }
+//     }
+//   }
 
   if (WiFi.status() != WL_CONNECTED){
     delay(5000);

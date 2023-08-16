@@ -78,7 +78,7 @@ void setup() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_UXGA;
+  config.frame_size = FRAMESIZE_VGA;
   config.pixel_format = PIXFORMAT_JPEG; // for streaming
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
@@ -88,12 +88,13 @@ void setup() {
   // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
   // for larger pre-allocated frame buffer.
   if(psramFound()){
-    config.jpeg_quality = 10;
+    config.jpeg_quality = 16;
     config.fb_count = 2;
     config.grab_mode = CAMERA_GRAB_LATEST;
   } else {
     // Limit the frame size when PSRAM is not available
-    config.frame_size = FRAMESIZE_SVGA;
+    config.jpeg_quality = 16;
+    config.frame_size = FRAMESIZE_VGA;
     config.fb_location = CAMERA_FB_IN_DRAM;
   }
 
