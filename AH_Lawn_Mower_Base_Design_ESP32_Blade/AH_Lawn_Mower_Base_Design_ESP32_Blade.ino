@@ -37,9 +37,9 @@ const int BLADE_PIN =23;
 
 int stateForBlade = 0;
 
-// #define TRIGGER_PIN 18 // D18 For reset WiFi credential
-#define TX_PIN 32
-#define RX_PIN 33
+ #define TRIGGER_PIN 18 // D18 For reset WiFi credential
+#define TX_PIN 42
+#define RX_PIN 41
 
 
 
@@ -181,20 +181,20 @@ void setup() {
 
 bool res;
  
-// if (digitalRead(TRIGGER_PIN) == HIGH){
-//   res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
+
+   res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
  
  
  
  
-//     if(!res) {
+    if(!res) {
  
-//         Serial.println("Failed to connect");
+         Serial.println("Failed to connect");
  
-//         // ESP.restart();
+         // ESP.restart();
  
-//     }
-// } 
+     }
+
 
   
   // pinMode(TRIGGER_PIN, INPUT_PULLUP);
