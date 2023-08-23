@@ -13,6 +13,22 @@ Finally, the mower can be remotely controlled by the user's device by the given 
 #include <WebServer.h>
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
+#include <Wire.h>               // Only needed for Arduino 1.6.5 and earlier
+#include "SSD1306Wire.h"        // legacy: #include "SSD1306.h"
+
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+// The pins for I2C are defined by the Wire-library. 
+// On an arduino UNO:       A4(SDA), A5(SCL)
+// On an arduino MEGA 2560: 20(SDA), 21(SCL)
+// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
+
+
+SSD1306Wire display(0x3c, 21, 22);
+
 
 // #include <WiFi.h>
 // select which pin will trigger the configuration portal when set to LOW
@@ -35,11 +51,11 @@ const int ACTUATOR_PIN2 = 17;   // Actuator control Retract TX2
 
 const int BLADE_PIN =23;   
 
-int stateForBlade = 0;
+//int stateForBlade = 0;
 
- #define TRIGGER_PIN 18 // D18 For reset WiFi credential
-#define TX_PIN 42
-#define RX_PIN 41
+#define TRIGGER_PIN 19 // D19 For reset WiFi credential
+#define TX_PIN 33
+#define RX_PIN 32
 
 
 
@@ -49,9 +65,14 @@ enum motorState {
   STOPPED,  FORWARD,  BACKWARD,  LEFT,  RIGHT
 };
 
+enum bladeState {
+  ON, OFF
+};
+
 volatile int throttle = 0; // RC channel 6 (throttle)
 volatile int steering = 0; // RC channel 2 (steering)
 int motorState = STOPPED;
+int bladeState = OFF;
 
 // Define pulse width ranges for RC receiver channels
 const int RC_CH2_RIGHT_MIN = 1100;
@@ -87,6 +108,8 @@ const int RC_CH6_BACKWARD_MAX = 1900;
 String html = "<!DOCTYPE html> <html>  <head> <meta name='viewport' content='width=device-width, initial-scale=1'> <style> /* Your existing CSS styles */ body { font-family: Arial; margin: 0; }  /* Style the header */ .header { padding: 60px; text-align: center; background: #1abc9c; color: white; }  /* Style the buttons */ .button { background-color: #008CBA; border: none; color: white; padding: 16px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }  .button2 { background-color: #f44336; }  .button-container { text-align: center; } #mower-state {color: white;padding: 60px;text-align: center; background: #1abc9c;} #stream-container { text-align: center; }   #stream { max-width: 100%; height: auto; display: block; margin: auto; } </style> </head>  <body> <div class='header'> <h1>Remote Control Lawn Mower</h1> <p>Control your lawn mower from anywhere</p> </div>";    ; 
               
 // String htmlWithIP = "<img id='stream' src='http://192.168.168.248:81/stream'>";
+String myServerIP;
+String receivedData;
 String htmlWithIP = "<img id='stream' src='http://";
 String htmlWithIPRemain;
 String html1 ="</div>"
@@ -120,13 +143,13 @@ void handleStop() {
 }
 
 void handleBladeOn() {
-  stateForBlade = 1;
+  bladeState = ON;
   Serial.println("The Blade is on");
   server.send(200, "text/html", "<div class='header'><p>Mower State: bladeon</p></div>");
 }
 
 void handleBladeOff() {
-  stateForBlade = 0;
+  bladeState = OFF;
   Serial.println("The Blade is off");
   server.send(200, "text/html", "<div class='header'><p>Mower State: bladeoff</p></div>");
 }
@@ -167,14 +190,114 @@ void handleActuator() {
   server.send(302, "text/plain", "");
 }
 
+void handleBlade() {
+  if (bladeState == ON){
+    digitalWrite(BLADE_PIN, HIGH);
+    Serial.println("OnOnOn");
+    //showBladeOn();
+  }
+  if (bladeState == OFF){
+    digitalWrite(BLADE_PIN, LOW);
+    Serial.println("OfOfOf");
+    //showConnected();
+  }
+}
+
+
+void showWillaIP(void) {
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 0, "Connect To");
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 16, "192.168.4.1");
+  display.display();
+}
+
+void showConnected(void) {
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 0, "Connect");
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 16, myServerIP);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 32, "To Control Mower");
+  display.display();
+}
+
+void showFoward(void) {
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 0, "It's Foward");
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 16, "Connect");
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 26, myServerIP);
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 36, "To Control Mower");
+  display.display();
+}
+
+void showBladeOn(void) {
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 0, "BLADE ON");
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 16, "Connect");
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 26, myServerIP);
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 36, "To Control Mower");
+  display.display();
+}
+
+void showCredentialCleaned(void) {
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 0, "WiFi Credential");
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(0, 16, "Has Been Cleaned");
+  //setFont(ArialMT_Plain_16);
+  //display.drawString(0, 32, "To Control Mower");
+  display.display();
+}
+
+void showStateOnScreen(void) {
+  if (bladeState == ON && motorState == FORWARD){
+    showBladeOn();
+  }else if(bladeState == ON && motorState != FORWARD){
+    showBladeOn();
+  }else if(bladeState == OFF && motorState == FORWARD){
+    showFoward();
+  }else{
+    showConnected();
+  }
+}
+
+
 void setup() {
+  //Wire.begin(0x3C,21,22);//sda,scl
+  //display.clearDisplay();
+  
+  Serial.println("\n Starting");
+  display.init();
+  display.flipScreenVertically();
+  display.clear();
+  
+  showWillaIP();
+
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP  
   // put your setup code here, to run once:
   Serial.begin(115200);
+  
   // espSerial.begin(9600);
-  Serial.println("\n Starting");
+  
   Serial1.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
-  // pinMode(TRIGGER_PIN, INPUT_PULLUP);
+  pinMode(TRIGGER_PIN, INPUT_PULLUP);
+  //showWillaIP();
   WiFiManager wm;
  
 
@@ -182,20 +305,23 @@ void setup() {
 bool res;
  
 
-   res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
- 
- 
- 
+  res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
  
     if(!res) {
  
-         Serial.println("Failed to connect");
+        Serial.println("Failed to connect");
  
-         // ESP.restart();
+        // ESP.restart();
  
-     }
+    }else{
+      myServerIP = WiFi.localIP().toString();
+      showConnected();
+    }
 
-
+//while (WiFi.status() != WL_CONNECTED) {
+    //delay(10000);
+   // Serial.println("Connecting to WiFi...");
+ //  }
   
   // pinMode(TRIGGER_PIN, INPUT_PULLUP);
 
@@ -204,12 +330,10 @@ bool res;
   //  throttle = pulseIn(RC_CH2_PIN, HIGH, 20000) / 10;
   //}, CHANGE);
   
-  
   // pinMode(RC_CH6_PIN, INPUT); //rc1
   //attachInterrupt(digitalPinToInterrupt(RC_CH6_PIN), [](){
   //  steering = pulseIn(RC_CH6_PIN, HIGH, 20000) / 10;
   //}, CHANGE);
-
   pinMode(MOTOR_PIN, OUTPUT); // relay3
   pinMode(ACTUATOR_PIN1, OUTPUT);
   pinMode(ACTUATOR_PIN2, OUTPUT);
@@ -218,14 +342,6 @@ bool res;
   digitalWrite(BLADE_PIN, LOW);
   digitalWrite(ACTUATOR_PIN1, LOW);
   digitalWrite(ACTUATOR_PIN2, LOW);
-  
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(10000);
-  //   Serial.println("Connecting to WiFi...");
-  // }
-   
- 
-
   // Serial.println("Connected to WiFi");
   // Serial.println("IP address: ");
   // Serial.println(WiFi.localIP());
@@ -246,42 +362,29 @@ bool res;
   server.on("/bladeoff", handleBladeOff);
   
   server.begin();
+  
 }
 
 
 void loop() {
-
-
-  if (stateForBlade == 1){
-    digitalWrite(BLADE_PIN, HIGH);
-    Serial.print("OnOnOn");
-  }
-  if (stateForBlade == 0){
-    digitalWrite(BLADE_PIN, LOW);
-    Serial.print("OfOfOf");
-  }
-
-
-  delay(100);
-// if ( digitalRead(TRIGGER_PIN) == LOW) {
-//   bool res;
-//     WiFiManager wm;    
- 
-//     //reset settings - for testing
-//     //wm.resetSettings();
+delay(50);
+handleBlade();
+showStateOnScreen();
   
-//     // set configportal timeout
-//     wm.resetSettings();
-//     Serial.print("Cleaned");
-//     res = wm.autoConnect("Willa_Mower","BobdaSML"); // password protected ap
-//     if(!res) {
+if ( digitalRead(TRIGGER_PIN) == LOW) {
+  bool res;
+    WiFiManager wm;    
  
-//         Serial.println("Failed to connect");
- 
-//         // ESP.restart();
- 
-//     }
-//   }
+    //reset settings - for testing
+    //wm.resetSettings();
+  
+    // set configportal timeout
+    wm.resetSettings();
+    Serial.print("Cleaned");
+    showCredentialCleaned();
+    delay(5000);
+    ESP.restart();
+  }
 
   if (WiFi.status() != WL_CONNECTED){
     delay(5000);
@@ -305,7 +408,8 @@ void loop() {
   // espSerial.println(ssid);
   // espSerial.println(ssid);
 
-String receivedData = Serial1.readStringUntil(',');
+receivedData = Serial1.readStringUntil(',');
+//String receivedData;
 
 // if(receivedData == "192.168.168.248"){
 //   Serial.println("yes, it is equal");
@@ -318,17 +422,8 @@ htmlWithIPRemain = receivedData + ":81/stream'>";
 
 webPageHTML = html + htmlWithIP + htmlWithIPRemain + html1;
 
-Serial.println(webPageHTML);
-
-
-
-
-
-
-  server.handleClient();
-
-
-
+//Serial.println(webPageHTML);
+server.handleClient();
   // put your main code here, to run repeatedly:
   // Serial.println(WiFi.localIP());
   // int CH2 = pulseIn(RC_CH2_PIN, HIGH, 25000);
@@ -337,7 +432,8 @@ Serial.println(webPageHTML);
   // Determine motor state based on RC inputs and current motorState
   if (motorState == FORWARD) { // || (RC_CH2_PIN > RC_CH6_FORWARD_MIN && RC_CH6_PIN < RC_CH6_FORWARD_MAX)) {
     digitalWrite(MOTOR_PIN, HIGH);
-    Serial.print("It does work forward");
+    Serial.println("It does work forward");
+    //showFoward();
     // digitalWrite(MOTOR_DIR1_PIN, HIGH);
     // digitalWrite(MOTOR_DIR2_PIN, LOW); // Backward is unnecessary
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when moving forward
@@ -352,7 +448,8 @@ Serial.println(webPageHTML);
     // digitalWrite(MOTOR_PIN, HIGH);
     // digitalWrite(MOTOR_DIR1_PIN, LOW);
     // digitalWrite(MOTOR_DIR2_PIN, HIGH);
-    Serial.print("It does work left");
+    //showConnected();
+    Serial.println("It does work left");
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when turning left
     digitalWrite(ACTUATOR_PIN2, HIGH); // Retract actuator when moving forward
     delay(1000);
@@ -361,14 +458,15 @@ Serial.println(webPageHTML);
     // digitalWrite(MOTOR_PIN, HIGH);
     // digitalWrite(MOTOR_DIR1_PIN, HIGH);
     // digitalWrite(MOTOR_DIR2_PIN, LOW);
-    Serial.print("It does work right");
+    //showConnected();
+    Serial.println("It does work right");
     digitalWrite(ACTUATOR_PIN1, HIGH); // Extend actuator when turning right
     digitalWrite(ACTUATOR_PIN2, LOW); // Retract actuator when moving forward
     delay(1000);
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when moving forward
   } else { // if STOP
     digitalWrite(MOTOR_PIN, LOW);
-    Serial.print("It is stop");
+    Serial.println("It is stop");
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when moving forward
     digitalWrite(ACTUATOR_PIN2, LOW); // Retract actuator when moving forward
     
