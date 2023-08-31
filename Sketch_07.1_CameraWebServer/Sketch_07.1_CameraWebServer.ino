@@ -12,6 +12,7 @@
 #include <HardwareSerial.h>
 
 // ===================
+
 // Select camera model
 // ===================
 //#define CAMERA_MODEL_WROVER_KIT // Has PSRAM
@@ -40,6 +41,8 @@
 String receivedSSID;
 String receivedPassword;
 String sendIPaddress;
+
+int countTemp = 0;
 
 #define RX_PIN 42
 #define TX_PIN 41
@@ -78,23 +81,22 @@ void setup() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_VGA;
+  config.frame_size = FRAMESIZE_UXGA;
   config.pixel_format = PIXFORMAT_JPEG; // for streaming
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 16;
+  config.jpeg_quality = 12;
   config.fb_count = 1;
   
   // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
   // for larger pre-allocated frame buffer.
   if(psramFound()){
-    config.jpeg_quality = 16;
+    config.jpeg_quality = 10;
     config.fb_count = 2;
     config.grab_mode = CAMERA_GRAB_LATEST;
   } else {
     // Limit the frame size when PSRAM is not available
-    config.jpeg_quality = 16;
-    config.frame_size = FRAMESIZE_VGA;
+    config.frame_size = FRAMESIZE_SVGA;
     config.fb_location = CAMERA_FB_IN_DRAM;
   }
 
@@ -149,8 +151,12 @@ void setup() {
   WiFi.setSleep(false);
 
   while (WiFi.status() != WL_CONNECTED) {
+    countTemp++;
     delay(500);
     Serial.print(".");
+    if(countTemp == 10){
+      ESP.restart();
+    }
   }
   Serial.println("");
   Serial.println("WiFi connected");
@@ -167,9 +173,12 @@ void loop() {
   // Do nothing. Everything is done in another task by the web server
   delay(1000);
   Serial.print(Serial.read());
-
+   if (WiFi.status() != WL_CONNECTED){
+    delay(2000);
+    ESP.restart();
+  }
   
-
+  
 
   String ip_address = WiFi.localIP().toString();
   Serial.print("localIPString = ");
