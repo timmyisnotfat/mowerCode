@@ -108,11 +108,19 @@ String htmlWithIPLeft = "<img class='video' id='stream1' src='http://";
 String htmlWithIPRemain;
 String htmlWithIPRemainLeft;
 String html1 ="</div>"
-              "<div style='padding:20px' class='button-container'> <button class='button' onclick='showVideo(\"stream1\");'>Left View</button> <button class='button' onclick='showVideo(\"stream2\");'>Front View</button> <button class='button' onclick='showVideo(\"stream3\");'>Right View</button> </div><div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"forward\");'>Forward</button> </div> <div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"left\");'>Left</button> <button class='button button2' onclick='sendCommand(\"stop\");'>Stop</button> <button class='button' onclick='sendCommand(\"right\");'>Right</button> </div> <div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"backward\");'>Backward</button> </div> <!-- Display the mower state here --> <div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"bladeon\");'>Blade On</button> <button class='button button2' onclick='sendCommand(\"bladeoff\");'>Blade Off</button> </div><div id='mower-state'><p>Mower State: Stop </p></div><div id='blade-state'><p>Blade State: Blade Off</p></div><script>function showVideo(videoId) { var videos = document.getElementsByClassName('video'); for (var i = 0; i < videos.length; i++) { videos[i].style.display = 'none'; } var selectedVideo = document.getElementById(videoId); selectedVideo.style.display = 'block'; } function sendCommand(command) { fetch('/' + command, { method: 'POST', }).then(response => { if (!response.ok) { throw new Error('Network response was not ok'); } console.log('Command sent successfully:', command); history.pushState({}, null, '/' + command); if (command === 'right') { updateMowerState('Right'); } if (command === 'left') { updateMowerState('Left'); } if (command === 'backward') { updateMowerState('Backward'); } if (command === 'forward') { updateMowerState('Forward'); } if (command === 'stop') { updateMowerState('Stop'); } if (command === 'bladeon') { updateBladeState('Blade On'); } if (command === 'bladeoff') { updateBladeState('Blade Off'); } }).catch(error => { console.error('Error sending command:', error); }); } function updateMowerState(state) { var mowerStateElement = document.getElementById('mower-state'); mowerStateElement.innerHTML = \"<p>Mower State: \" + state + \"</p>\"; } function updateBladeState(state) { var bladeStateElement = document.getElementById('blade-state'); bladeStateElement.innerHTML = \"<p>Blade State: \" + state + \"</p>\"; } window.onload = function() { showVideo(\"stream2\");  }</script></body></html>"; 
+              "<div style='padding:20px' class='button-container'> <button class='button' onclick='showVideo(\"stream1\");'>Left View</button> <button class='button' onclick='showVideo(\"stream2\");'>Front View</button> <button class='button' onclick='showVideo(\"stream3\");'>Right View</button> </div><div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"forward\");'>Forward</button> </div> <div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"left\");'>Left</button> <button class='button button2' onclick='sendCommand(\"stop\");'>Stop</button> <button class='button' onclick='sendCommand(\"right\");'>Right</button> </div> <div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"backward\");'>Backward</button> </div> <!-- Display the mower state here --> <div style='padding:20px' class='button-container'> <button class='button' onclick='sendCommand(\"bladeon\");'>Blade On</button> <button class='button button2' onclick='sendCommand(\"bladeoff\");'>Blade Off</button> </div><div id='mower-state'><p>Mower State: ";
+String mowerState = "Stop";              
+String htmlAfterMowerState = "</p></div><div id='blade-state'><p>Blade State: ";
+String bladeState = "Blade Off";
+
+String htmlAfterBladeState = "</p></div><script>function showVideo(videoId) { var videos = document.getElementsByClassName('video'); for (var i = 0; i < videos.length; i++) { videos[i].style.display = 'none'; } var selectedVideo = document.getElementById(videoId); selectedVideo.style.display = 'block'; } function sendCommand(command) { fetch('/' + command, { method: 'POST', }).then(response => { if (!response.ok) { throw new Error('Network response was not ok'); } console.log('Command sent successfully:', command);  if (command === 'right') { updateMowerState('Right'); } if (command === 'left') { updateMowerState('Left'); } if (command === 'backward') { updateMowerState('Backward'); } if (command === 'forward') { updateMowerState('Forward'); } if (command === 'stop') { updateMowerState('Stop'); } if (command === 'bladeon') { updateBladeState('Blade On'); } if (command === 'bladeoff') { updateBladeState('Blade Off'); } }).catch(error => { console.error('Error sending command:', error); }); } function updateMowerState(state) { var mowerStateElement = document.getElementById('mower-state'); mowerStateElement.innerHTML = \"<p>Mower State: \" + state + \"</p>\"; } function updateBladeState(state) { var bladeStateElement = document.getElementById('blade-state'); bladeStateElement.innerHTML = \"<p>Blade State: \" + state + \"</p>\"; } window.onload = function() { showVideo(\"stream2\");  }</script></body></html>"; 
 
 String webPageHTML;
 String myServerIP;
 
+
+
+// history.pushState({}, null, '/' + command);
 
 void handleRoot() {
   server.send(200, "text/html", webPageHTML);
@@ -372,10 +380,12 @@ showStateOnScreen();
 
   if (stateForBlade == 1){
     digitalWrite(BLADE_PIN, HIGH);
+    bladeState = "Blade On";
     Serial.print("OnOnOn");
   }
   if (stateForBlade == 0){
     digitalWrite(BLADE_PIN, LOW);
+    bladeState = "Blade Off";
     Serial.print("OfOfOf");
   }
 
@@ -429,8 +439,13 @@ if ( digitalRead(TRIGGER_PIN) == LOW) {
   // espSerial.println(ssid);
   // espSerial.println(ssid);
 
-receivedData = Serial1.readStringUntil(',');
-receiveDataLeft = Serial2.readStringUntil(',');
+if(Serial1.available()){
+  receivedData = Serial1.readStringUntil(',');
+}
+if(Serial2.available()){
+  receiveDataLeft = Serial2.readStringUntil(',');
+}
+
 
 // if(receivedData == "192.168.168.248"){
 //   Serial.println("yes, it is equal");
@@ -443,7 +458,7 @@ Serial.println(receiveDataLeft);
 htmlWithIPRemain = receivedData + ":81/stream'>";
 htmlWithIPRemainLeft = receiveDataLeft + ":81/stream'>";
 
-webPageHTML = html + htmlWithIP + htmlWithIPRemain + htmlWithIPLeft + htmlWithIPRemainLeft + html1;
+webPageHTML = html + htmlWithIP + htmlWithIPRemain + htmlWithIPLeft + htmlWithIPRemainLeft + html1 + mowerState+ htmlAfterMowerState + bladeState  + htmlAfterBladeState ;
 
 //Serial.println(webPageHTML);
 
@@ -464,6 +479,7 @@ webPageHTML = html + htmlWithIP + htmlWithIPRemain + htmlWithIPLeft + htmlWithIP
   // Determine motor state based on RC inputs and current motorState
   if (motorState == FORWARD) { // || (RC_CH2_PIN > RC_CH6_FORWARD_MIN && RC_CH6_PIN < RC_CH6_FORWARD_MAX)) {
     digitalWrite(MOTOR_PIN, HIGH);
+    mowerState = "Forward";
     Serial.print("It does work forward");
     // digitalWrite(MOTOR_DIR1_PIN, HIGH);
     // digitalWrite(MOTOR_DIR2_PIN, LOW); // Backward is unnecessary
@@ -479,6 +495,7 @@ webPageHTML = html + htmlWithIP + htmlWithIPRemain + htmlWithIPLeft + htmlWithIP
     // digitalWrite(MOTOR_PIN, HIGH);
     // digitalWrite(MOTOR_DIR1_PIN, LOW);
     // digitalWrite(MOTOR_DIR2_PIN, HIGH);
+    mowerState = "Left";
     Serial.print("It does work left");
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when turning left
     digitalWrite(ACTUATOR_PIN2, HIGH); // Retract actuator when moving forward
@@ -488,12 +505,14 @@ webPageHTML = html + htmlWithIP + htmlWithIPRemain + htmlWithIPLeft + htmlWithIP
     // digitalWrite(MOTOR_PIN, HIGH);
     // digitalWrite(MOTOR_DIR1_PIN, HIGH);
     // digitalWrite(MOTOR_DIR2_PIN, LOW);
+    mowerState = "Right";
     Serial.print("It does work right");
     digitalWrite(ACTUATOR_PIN1, HIGH); // Extend actuator when turning right
     digitalWrite(ACTUATOR_PIN2, LOW); // Retract actuator when moving forward
     delay(1000);
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when moving forward
   } else { // if STOP
+    mowerState = "Stop";
     digitalWrite(MOTOR_PIN, LOW);
     Serial.print("It is stop");
     digitalWrite(ACTUATOR_PIN1, LOW); // Retract actuator when moving forward
